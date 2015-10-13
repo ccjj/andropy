@@ -1,6 +1,5 @@
 class Config:
-	#avddir = 
-	#avddir = "C:/Users/ssh/.android/avd"
+
 	#virus and machinename are the same!
 	def __init__(self, samplepath, interval, sdcard=False, outputpath=False, customconfig=False):
 		self.samplepath = samplepath #path of the malware sample
