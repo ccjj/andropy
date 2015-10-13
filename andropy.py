@@ -3,7 +3,7 @@ import sys
 import ConfigClass
 import createfiles
 import OnlineNotifierClass
-import machineClass
+import MachineClass
 import apkparse
 import subprocess
 import time
@@ -20,17 +20,17 @@ def create_and_config(a, b, c ,d, e, isrunning):
 
 def main(argv):
 	#inserts in the config-constructor args.samplepath, args.interval, args.sdcard, args.outputpath, args.customconfig
-	a, b, c, d, e = argparser.get_args()
+	a, b, c, d, e = argparser.get_args()#todo
 	adbcommands.kill_blocking_processes()
 	
-	if adbcommands.check_online_devices() == False: #no other device running
+	if adbcommands.other_emulator_online() == False: #no other device running
 		config = create_and_config(a, b, c ,d, e, False)
 		machine = OnlineNotifierClass.OnlineNotifier(config.name, config.filedir)
 		machine.start_machine()
 	else: #some other device is running
 		config = create_and_config(a, b, c ,d, e, True)
 	start_online_timer()
-	android = machineClass.Device(config)
+	android = MachineClass.Device(config)
 	android.start()
 
 

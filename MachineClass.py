@@ -22,15 +22,14 @@ class Device:
 		self.newavddir = config.newavddir
 
 	def start(self):
-		# print config.filedir
-		self.install_lime(self.filedir)
-		self.installapk(self.samplepath)
-		self.start_apk(self.package, self.activity)
+		self.install_lime()
+		self.install_apk()
+		self.start_apk()
 		self.remove_lime()  # TODO only for debug
-		self.copydump(self.name, self.sdcard, self.outputpath, self.interval, self.newavddir, True)
+		self.copydump(True)
 
-	def installapk(self, samplepath):
-		subprocess.check_call(['adb', 'install', samplepath], stdout=subprocess.PIPE)
+	def install_apk(self):
+		subprocess.call(['adb', 'install', self.samplepath])
 
 	def restart_adb(self):
 		print "restarting adb"
@@ -39,29 +38,36 @@ class Device:
 		subprocess.call(['adb', 'start-server'])
 		time.sleep(10.0)
 
-	def remove_lime(self, err_counter=0):
+	def remove_lime(self):
 		cmd = "adb shell rmmod lime"
 		p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		output = p.communicate()[0]
 
 
-	def get_dump_from_sd(self, name, outputpath, newavddir):
+	def get_dump_from_sd(self, name, tmpfilepath):
 		# gets the node-number of lime.dump on the sd-card
 		node = ""
-		cmd = "fls -r -p {}".format(newavddir + '/sdcard.img')
-		ps = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
-		output = ps.communicate()[0]
+		getnodecmd = "fls -r -p {}".format(self.newavddir + '/sdcard.img')
+		p = subprocess.Popen(shlex.split(getnodecmd), stdout=subprocess.PIPE)
+		output = p.communicate()[0]
 		for line in output.split('\n'):
 			if 'lime.dump' in line:
 				node = re.search(r"([0-9]+)", line).group(1)
 		if node == "":
 			print "Error - could not locate dump on sdcard"
 			return False
+		rtnfls = p.returncode
+		if rtnfls != 0:
+			return False
 		# extracts node
-		cmd2 = "icat {} {} > {}".format(newavddir + '/sdcard.img', node, outputpath)
-		extractnode = subprocess.call(['/bin/bash', '-c', cmd2])
+		icatcmd = "icat {} {} > {}".format(self.newavddir + '/sdcard.img', node, self.outputpath)
+		extractnode = subprocess.Popen(icatcmd, shell=True)
+		rtncat = extractnode.returncode
+		if rtncat != 0:
+			return False
+		return True
 
-	def sendbroadcast(self):
+	def send_broadcast(self):
 		p = subprocess.Popen(["adb", "shell", "insmod", "/sdcard/lime.ko", "path=tcp:4444 format=lime"])
 
 
@@ -73,7 +79,6 @@ class Device:
 		while Psuccess == False:
 			if err_counter > 6:
 				break
-			send_result
 			Psuccess = self.check_success_ncat(outputname)
 			err_counter += 1
 			time.sleep(2.0)
@@ -89,54 +94,55 @@ class Device:
 
 
 	def cbroadcast(self, outputname):
-		command = 'nc localhost 4444 | pv -e -b > "{}"'.format(outputname)
-		# wait for the process to finish with check call
-		recievetcp = subprocess.Popen(['/bin/bash', '-c', command], stdout=subprocess.PIPE)
-		for line in recievetcp.stdout:
-			print line
+		cmd = 'nc localhost 4444 | pv -e -b > "{}"'.format(outputname)
+		recievetcp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+		recievetcp.communicate()
 
-
-	def copydump(self, name, sdcard, outputpath, interval, newavddir, firstcall):
+	def copydump(self, firstcall):
 		if firstcall == False:
 			self.remove_lime()
-		if sdcard:  # case sd TODO change param order
-			self.get_over_sd(interval, outputpath, name, newavddir)
+		if self.sdcard > 31:  # case sd
+			self.get_over_sd()
 		else:  # case tcp
 			if firstcall == True:
 				opentcp = subprocess.check_output(["adb", "forward", "tcp:4444", "tcp:4444"])
-			self.get_over_tcp(interval, outputpath, name)
+			self.get_over_tcp()
 
 
-	def create_filename(self, name, outputpath):
+	def create_filename(self, outputpath, name):
 		now = datetime.datetime.now().strftime("%y-%m-%d-%H:%M:%S")
 		filename = 'lime-' + name + '-' + now + '.dump'  # NEW
 		tmpfilepath = outputpath + '/tmp/' + filename  # NEW
 		return filename, tmpfilepath
 
 
-	def get_over_sd(self, interval, outputpath, name, newavddir):  # todo rename outputname, create constructor with config
-		threading.Timer(interval, self.get_over_sd, args=(interval, name, outputpath, newavddir)).start()
+	def get_over_sd(self):  # todo rename outputname, create constructor with config
+		threading.Timer(self.interval, self.get_over_sd).start()
 		if self.check_oflag() == True:
 			print "copy-dump-operation from sd skipped because there was an other operation in progress"
 			return
-		filename, tmpfilepath = self.create_filename(name, str(outputpath))
+		tmpfile, tmpfilepath = self.create_filename(self.outputpath, self.name)
 		self.oflag = True
 		print "Attempting to dump the RAM to sdcard"
-		copysd = subprocess.call(['adb', 'shell', 'insmod', '/sdcard/lime.ko', 'path=/sdcard/lime.dump format=lime'])
-		self.get_dump_from_sd(name, tmpfilepath, newavddir)
-		print "SUCCESS"
-		self.copy_from_tmp(outputpath, tmpfilepath, filename)
+		cmd = 'pv -e -b | adb shell insmod /sdcard/lime.ko path=/sdcard/lime.dump format=lime'
+		s = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+		s.communicate()
+		if self.get_dump_from_sd(self.name, tmpfilepath) == True:
+			self.copy_from_tmp(self.outputpath, tmpfilepath, tmpfile)
+			print "Successfully aquired ram-dump over SD"
+		else:
+			print "Error - could not dump the ram over SD"
 		self.remove_lime()
 		self.oflag = False
 
 
-	def get_over_tcp(self, interval, outputpath, name):
-		threading.Timer(interval, self.get_over_tcp, args=(interval, outputpath, name)).start()
+	def get_over_tcp(self):
+		threading.Timer(self.interval, self.get_over_tcp).start()
 		if self.check_oflag() == True:
 			print "copy-dump-operation from tcp skipped because there was an other operation in progress"
 			return
-		filename, tmpfilepath = self.create_filename(name, outputpath)
-		s = threading.Thread(target=self.sendbroadcast)
+		filename, tmpfilepath = self.create_filename(self.outputpath, self.name)
+		s = threading.Thread(target=self.send_broadcast)
 		send_result = []
 		t = threading.Timer(3.5, self.tcp_get_output, args=(tmpfilepath, send_result))
 		self.oflag = True
@@ -145,8 +151,8 @@ class Device:
 		t.start()
 		t.join()
 		if send_result[0] == True:
-			print "SUCCESS"
-			self.copy_from_tmp(outputpath, tmpfilepath, filename)
+			self.copy_from_tmp(self.outputpath, tmpfilepath, filename)
+			print "Successfully received tcp-dump"
 		else:
 			print "Error - could not get data from tcp. Maybe the kernel is busy?"
 			try:
@@ -167,25 +173,24 @@ class Device:
 		return False
 
 
-	def install_lime(self, filedir):
+	def install_lime(self):
 		print "installing lime"
-		cmd = "adb push {} /sdcard/lime.ko".format(filedir + '/lime-goldfish.ko')
-		p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+		cmd = "adb push {} /sdcard/lime.ko".format(self.filedir + '/lime-goldfish.ko')
+		p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 		p.communicate()
-		exit_code = p.wait()
 	
-	def start_apk(self, package=False, activity=False):
+	def start_apk(self):
 		print "attempting to install the apk"
-		if package != False and package is not None:
-			subprocess.call(['adb', 'shell', 'monkey', '-p', package, '-c', 'android.intent.category.LAUNCHER', '1'])
+		if self.package != False and self.package is not None:
+			subprocess.call(['adb', 'shell', 'monkey', '-p', self.package, '-c', 'android.intent.category.LAUNCHER', '1'])
 		else:
-			print("error parsing apk - please start the app manually, then continue the app")
+			print("Error parsing apk - please start the app manually, then continue the app")
 			raw_input("push [Enter] if you have started the app")
 
 
-	def copy_from_tmp(self, outputpath, outputname, filename):
+	def copy_from_tmp(self, outputpath, tmpfilepath, filename):
 		try:
-			shutil.move(outputname, outputpath + '/' + filename)
-		except:
-			print "error - could not copy dump from tmp-folder"
+			shutil.move(tmpfilepath, outputpath + '/' + filename)
+		except Exception as e:
+			print "Error - could not copy dump from tmp-folder. " + str(e)
 			pass

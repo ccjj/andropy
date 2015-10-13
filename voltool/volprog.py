@@ -137,7 +137,7 @@ class Vshell:
 			if not vol_cmd in self.vol_commands:
 				print "Error - no volatility command specified after args. Canceling command."
 				return
-			print args
+			#print args
 			fname = False
 			s = " ";
 			cmdstring =  s.join(args.items)
@@ -161,6 +161,7 @@ class Vshell:
 		cmdbuilder = CmdBuilder(self.volfile, self.volprofile)
 		self.dumpclass = Dumpclass(cmdbuilder, self.dumpfiles)
 
+
 #size compare? check if open error in volatility. mark as faulty? TODO
 
 def volread_argparse(*args):
@@ -175,11 +176,10 @@ def volread_argparse(*args):
 
 if __name__ == '__main__':
 	samplepath = volread_argparse(sys.argv[1:])
-	#selfpath = "/home/santoku4/volatility"
 	if samplepath is not None:
 		dumppath = samplepath
 	else:
-		dumppath = "/home/santoku4/Desktop/pyscripts/volatility"
+		dumppath =  os.path.dirname(os.path.abspath(__file__))#current folder
 	volfile = "/home/santoku4/volatility/vol.py"
 	volprofile = "LinuxGoldfish-3_4ARM"
 	sshell = Vshell(dumppath, volfile, volprofile)

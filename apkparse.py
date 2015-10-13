@@ -25,7 +25,7 @@ def get_package_infos(samplepath):
 				t = s.find ("'  label='")
 				s = s[:t]
 				activity = s
-		print "p: " + package + "\na:" + activity
+		print "Package-name: " + package + "\nActivity-name: " + activity
 		if activity is None or package is None:
 			print "Error parsing apk - please start the apk when the machine is fully bootet"
 			return False, False
@@ -33,10 +33,3 @@ def get_package_infos(samplepath):
 	except Exception, e:
 		print "Error parsing apk - please start the apk when the machine is fully bootet"
 		return False, False
-		#def parse_apk(samplepath):	
-	
-#pkg, act = get_package_infos("/home/santoku4/Desktop/pyscripts/smallest.apk")
-
-#raw_input("push [Enter] if you have started the app")
-#subprocess.call(['adb', 'shell', 'monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1'])
-

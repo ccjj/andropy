@@ -5,6 +5,7 @@ import errno
 import shlex
 from shutil import copyfile
 import time
+import adbcommands
 
 def writeFile(content, fpath):
 	f = open(fpath,"w")
@@ -21,14 +22,16 @@ def mkdir_p(path):
 
 def create_avd_files(name, avddir, configdir, newavddir, outputpath, avdini, sdsize, isrunning=False):#TODO sd size param
 	mkdir_p(outputpath + '/tmp')
+	print "Other avd is running: " + str(isrunning)
 	avdtemplate = cfgtemplate.template(name, avddir)
 	if isrunning == False:
 		mkdir_p(newavddir)
-		command2 = "mksdcard {} {}/sdcard.img".format(str(sdsize) + 'M', newavddir)
-		subprocess.call(command2.split())
-		time.sleep(1.0)
-		command = 'echo no |android create avd -n {0} -t 1'.format(name)
-		s1 = subprocess.Popen(['/bin/bash', '-c', command], stdout=subprocess.PIPE)
-		s1.wait()
+		sdcmd = 'mksdcard {} {}'.format(str(sdsize) + 'M', newavddir+ '/sdcard.img')
+		subprocess.call(shlex.split(sdcmd))
+		adbcommands.check_sd_size(newavddir, sdsize)
+		print "SD CREATED"
+		avdcreatecommand = 'android create avd -n {0} -t 1'.format(name)
+		s1 = subprocess.Popen(avdcreatecommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)		
+		s1.communicate('no')
 		copyfile(configdir + '/' + avdini, newavddir + '/config.ini')
 		writeFile(avdtemplate, avddir + '/' +  name + '.ini')
