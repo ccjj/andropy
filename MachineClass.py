@@ -25,7 +25,7 @@ class Device:
 		self.install_lime()
 		self.install_apk()
 		self.start_apk()
-		self.remove_lime()  # TODO only for debug
+		self.remove_lime() 
 		self.copydump(True)
 
 	def install_apk(self):
@@ -111,8 +111,8 @@ class Device:
 
 	def create_filename(self, outputpath, name):
 		now = datetime.datetime.now().strftime("%y-%m-%d-%H:%M:%S")
-		filename = 'lime-' + name + '-' + now + '.dump'  # NEW
-		tmpfilepath = outputpath + '/tmp/' + filename  # NEW
+		filename = 'lime-' + name + '-' + now + '.dump'
+		tmpfilepath = outputpath + '/tmp/' + filename
 		return filename, tmpfilepath
 
 
@@ -124,7 +124,7 @@ class Device:
 		tmpfile, tmpfilepath = self.create_filename(self.outputpath, self.name)
 		self.oflag = True
 		print "Attempting to dump the RAM to sdcard"
-		cmd = 'pv -e -b | adb shell insmod /sdcard/lime.ko path=/sdcard/lime.dump format=lime'
+		cmd = 'adb shell insmod /sdcard/lime.ko path=/sdcard/lime.dump format=lime'
 		s = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 		s.communicate()
 		if self.get_dump_from_sd(self.name, tmpfilepath) == True:
