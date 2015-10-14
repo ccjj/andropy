@@ -58,7 +58,7 @@ class OnlineNotifier:
 		t = threading.Thread(target=self.checkDemon)
 		t.start()
 		print "daemon started"
-		adbcommands.start_avd(self.name, self.filedir)
+		self.avdpid = adbcommands.start_avd(self.name, self.filedir)
 		t.join()
 		if self.timer > self.timeout:
 			print "restarting avd - timeout exceeded"

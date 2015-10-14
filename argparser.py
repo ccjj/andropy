@@ -1,4 +1,4 @@
-def get_args():
+def get_args(*args):
 	import argparse
 	import os
 	from sys import exit
@@ -12,7 +12,7 @@ def get_args():
 
 	args = parser.parse_args()
 	if not os.path.isfile(args.samplepath) or (args.customconfig is not None and os.path.isfile(args.customconfig)):
-		raise Exception("error : one or more specified paths are not pointing to a file")
+		raise Exception("Error : one or more specified paths are not pointing to a file")
 	return args.samplepath, args.interval, args.sdcard, args.outputpath, args.customconfig
 	
 	

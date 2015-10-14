@@ -20,13 +20,14 @@ class Device:
 		self.outputpath = config.outputpath
 		self.interval = config.interval
 		self.newavddir = config.newavddir
+		self.avdpid = config.avdpid
 
 	def start(self):
-		self.install_lime()
+		adbcommands.install_lime()
 		self.install_apk()
 		self.start_apk()
 		self.remove_lime() 
-		self.copydump(True)
+		self.copy_dump(True)
 
 	def install_apk(self):
 		subprocess.call(['adb', 'install', self.samplepath])
@@ -40,11 +41,11 @@ class Device:
 
 	def remove_lime(self):
 		cmd = "adb shell rmmod lime"
-		p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+		p = subprocess.Popen(cmd.split())
 		output = p.communicate()[0]
 
 
-	def get_dump_from_sd(self, name, tmpfilepath):
+	def get_dump_from_sd(self, name):
 		# gets the node-number of lime.dump on the sd-card
 		node = ""
 		getnodecmd = "fls -r -p {}".format(self.newavddir + '/sdcard.img')
@@ -98,7 +99,7 @@ class Device:
 		recievetcp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 		recievetcp.communicate()
 
-	def copydump(self, firstcall):
+	def copy_dump(self, firstcall):
 		if firstcall == False:
 			self.remove_lime()
 		if self.sdcard > 31:  # case sd
@@ -117,18 +118,20 @@ class Device:
 
 
 	def get_over_sd(self):  # todo rename outputname, create constructor with config
+		#if adbcommands.is_emulator_alive(self.avdpid) != True:
+		#	return
 		threading.Timer(self.interval, self.get_over_sd).start()
 		if self.check_oflag() == True:
 			print "copy-dump-operation from sd skipped because there was an other operation in progress"
 			return
-		tmpfile, tmpfilepath = self.create_filename(self.outputpath, self.name)
+		outputname, tmpfilepath = self.create_filename(self.outputpath, self.name)
 		self.oflag = True
 		print "Attempting to dump the RAM to sdcard"
 		cmd = 'adb shell insmod /sdcard/lime.ko path=/sdcard/lime.dump format=lime'
 		s = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 		s.communicate()
-		if self.get_dump_from_sd(self.name, tmpfilepath) == True:
-			self.copy_from_tmp(self.outputpath, tmpfilepath, tmpfile)
+		if self.get_dump_from_sd(outputname) == True:
+
 			print "Successfully aquired ram-dump over SD"
 		else:
 			print "Error - could not dump the ram over SD"
@@ -137,6 +140,8 @@ class Device:
 
 
 	def get_over_tcp(self):
+		#if adbcommands.is_emulator_alive(self.avdpid) != True:
+		#	return
 		threading.Timer(self.interval, self.get_over_tcp).start()
 		if self.check_oflag() == True:
 			print "copy-dump-operation from tcp skipped because there was an other operation in progress"
@@ -151,7 +156,7 @@ class Device:
 		t.start()
 		t.join()
 		if send_result[0] == True:
-			self.copy_from_tmp(self.outputpath, tmpfilepath, filename)
+			adbcommands.copy_from_tmp(self.outputpath, tmpfilepath, filename)
 			print "Successfully received tcp-dump"
 		else:
 			print "Error - could not get data from tcp. Maybe the kernel is busy?"
@@ -172,25 +177,12 @@ class Device:
 				return True
 		return False
 
-
-	def install_lime(self):
-		print "installing lime"
-		cmd = "adb push {} /sdcard/lime.ko".format(self.filedir + '/lime-goldfish.ko')
-		p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
-		p.communicate()
 	
 	def start_apk(self):
 		print "attempting to install the apk"
 		if self.package != False and self.package is not None:
 			subprocess.call(['adb', 'shell', 'monkey', '-p', self.package, '-c', 'android.intent.category.LAUNCHER', '1'])
 		else:
-			print("Error parsing apk - please start the app manually, then continue the app")
+			print("Error parsing apk - please start the app manually, then continue the app\n")
 			raw_input("push [Enter] if you have started the app")
 
-
-	def copy_from_tmp(self, outputpath, tmpfilepath, filename):
-		try:
-			shutil.move(tmpfilepath, outputpath + '/' + filename)
-		except Exception as e:
-			print "Error - could not copy dump from tmp-folder. " + str(e)
-			pass

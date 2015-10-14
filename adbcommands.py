@@ -8,7 +8,8 @@ def restart_machine(name, filedir):
 	start_avd(name, filedir)				
 
 def start_avd(name, filedir):
-	subprocess.Popen(["emulator", "-avd", name, "-kernel", filedir + "/gKernel3.4", "-verbose"], cwd = r'/usr/share/android-sdk/sdk')
+	p = subprocess.Popen(["emulator", "-avd", name, "-kernel", filedir + "/gKernel3.4", "-verbose"], cwd = r'/usr/share/android-sdk/sdk')
+	return p.pid
 			
 def stop_avd():
 	subprocess.call(['killall', '-9', 'emulator64-arm'])
@@ -45,6 +46,13 @@ def kill_blocking_processes():
 def kill_adb_by_name(avdname):
 	subprocess.call(['adb', '-s', avdname, 'emu', 'kill']) 
 
+def is_emulator_alive(avdpid):
+	try:
+		os.kill(avdpid, 0)
+		return True
+	except OSError: #process dead
+		pass
+
 def other_emulator_online():
 	avdname = ""
 	status = ""
@@ -62,3 +70,19 @@ def other_emulator_online():
 		time.sleep(5.0)
 		return True
 	return False
+
+
+
+def install_lime(self):
+	print "installing lime"
+	cmd = "adb push {} /sdcard/lime.ko".format(self.filedir + '/lime-goldfish.ko')
+	p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
+	p.communicate()
+
+
+
+def copy_from_tmp(self, outputpath, tmpfilepath, filename):
+	try:
+		shutil.move(tmpfilepath, outputpath + '/' + filename)
+	except Exception as e:
+		print "Error - could not copy dump from tmp-folder. " + str(e)

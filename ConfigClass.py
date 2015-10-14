@@ -30,5 +30,8 @@ class Config:
 	def get_username(self):
 		return pwd.getpwuid(os.getuid()).pw_name
 
+	def set_avd_pid(self, pid):
+		self.avdpid = avdpid
+
 import os
 import pwd

@@ -27,6 +27,7 @@ def main(argv):
 		config = create_and_config(a, b, c ,d, e, False)
 		machine = OnlineNotifierClass.OnlineNotifier(config.name, config.filedir)
 		machine.start_machine()
+		config.set_avd_pid(machine.avdpid)
 	else: #some other device is running
 		config = create_and_config(a, b, c ,d, e, True)
 	start_online_timer()
