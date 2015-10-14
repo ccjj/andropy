@@ -5,9 +5,9 @@ It basically creates a new avd, starts the avd, and creates ram-dumps with the l
 
 The dumps can be later processed with volatility, an easy-to-use-program is attached.
 
-Commands for andropy.py, the main-tool:
+Commands for andropy, the main-tool:
 
-usage: andropy.py [-h] -n SAMPLEPATH -i INTERVAL [-d SDCARD] [-o OUTPUTPATH]
+usage: androstart.py [-h] -n SAMPLEPATH -i INTERVAL [-d SDCARD] [-o OUTPUTPATH]
                    [-c CUSTOMCONFIG]
 
 Automates android memory dumping. Creates an avd and dumps the ram with the LIME module regulary
