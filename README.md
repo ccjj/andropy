@@ -8,7 +8,6 @@ The dumps can be later processed with volatility, an easy-to-use-program is atta
 Commands for andropy, the main-tool:
 
 usage: androstart.py [-h] -n SAMPLEPATH -i INTERVAL [-d SDCARD] [-o OUTPUTPATH]
-                   [-c CUSTOMCONFIG]
 
 Automates android memory dumping. Creates an avd and dumps the ram with the LIME module regulary
 
@@ -23,8 +22,6 @@ optional arguments:
                         instead of being transfered over TCP
   -o OUTPUTPATH, --outputpath OUTPUTPATH
                         path of the output-path
-  -c CUSTOMCONFIG, --customconfig CUSTOMCONFIG
-                        path of a custom avd config.ini
 
 
 #Voltool
