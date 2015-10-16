@@ -1,3 +1,8 @@
+"""
+Helper-script for starting andropy and later the volatility tool. Accepts the same args as andropy and can cancel it.
+
+"""
+
 import subprocess
 import os
 import sys
