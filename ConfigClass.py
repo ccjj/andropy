@@ -1,37 +1,68 @@
-"""Class for saving all relevant settings."""
-import os
-import pwd
-class Config(object):
+"""
+Starts the avd, checks if the avd takes too long to boot and restarts, checks if the avd is ready by requesting sys.boot_completed from the adb shell.
+"""
+import subprocess
+import threading
+import time
+import adbcommands
 
-	#virus and machinename are the same!
-	def __init__(self, samplepath, interval, sdcard=False, outputpath=False, customconfig=False):
-		self.samplepath = samplepath #path of the malware sample
-		self.name = os.path.splitext(os.path.basename(samplepath))[0] #name of the file without extension will be used as avdname
-		self.interval = interval #how often dumps should be taken
-		self.avddir = '/home/{}/.android/avd'.format(self.get_username())
+class OnlineNotifier(object):
+	timer = 0
+	err_counter = 0
 
-		if sdcard is not None:
-			self.avdini = 'config_sd.ini'
-			self.sdcard = sdcard
+	def __init__(self, name, filedir, newavddir):
+		self.name = name
+		self.filedir = filedir
+		self.timeout = 1200
+		self.newavddir = newavddir
+
+	def online_check(self):
+		sflag = False
+		bootcompleted = subprocess.Popen(['adb', 'shell', 'getprop', 'sys.boot_completed'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		out, err = bootcompleted.communicate()
+		for line in out.split('\n'):
+			if line.strip() == "1":
+				sflag = True
+
+		for line in err:#supress device error - offline warning whenever calling
+			pass
+		if sflag == False:
+			print "android booting since %i seconds, please wait" %self.timer
+			return False
 		else:
-			self.avdini = 'config_nosd.ini'
-			self.sdcard = 30
-		self.selfdir = os.path.dirname(os.path.abspath(__file__)) #path of the analyzing-script, pre-defined
-		if outputpath is None or outputpath == False:
-			self.outputpath = self.selfdir
-		else:
-			self.outputpath = outputpath #custom dump-outputpath TODO
-		self.customconfig = customconfig #custom avd hardwareconfig
-		self.filedir = self.selfdir + '/files' #path of lime.ko and kernel
-		self.configdir = self.selfdir + '/configs' #path of preconfigured avd-configs, pre-defined
-		self.newavddir = self.avddir + '/' + self.name + '.avd' #folder of the new avd machine
+			print "android booted successfully"
+			return True		
 	
-	def set_apk_infos(self, package, activity):
-		self.package = package
-		self.activity = activity
+	"""signal that shell is available, or the timeout exceeded"""
+	def check_daemon(self):
+		stopFlag = False
+		while stopFlag == False:
+			if self.online_check() is True:
+				break
+			if self.timer > self.timeout:
+				break
+						
+			self.timer += 6
+			time.sleep(6)
+			
 
-	def get_username(self):
-		return pwd.getpwuid(os.getuid()).pw_name
+	def restart_machine(self):
+		adbcommands.stop_avd()
+		self.err_counter += 1
+		self.timer = 0
+		print "restarted " + str(self.err_counter) + " times"
 
-	def set_avd_pid(self, pid):
-		self.avdpid = pid
+		self.start_machine()	
+
+
+	def start_machine(self):
+		if self.err_counter >= 4:
+			raise Exception('Critical error: could not start the android emulator')
+		daemonthread = threading.Thread(target=self.check_daemon)
+		daemonthread.start()
+		print "daemon started"
+		adbcommands.start_avd(self.name, self.filedir, self.newavddir)
+		daemonthread.join()
+		if self.timer > self.timeout:
+			print "restarting avd - timeout exceeded"
+			self.restart_machine()
