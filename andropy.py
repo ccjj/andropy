@@ -1,3 +1,8 @@
+"""
+Starts the andropy-script, with an input to cancel it. Expects and requires the same args as the andropy-script.
+
+After andropy finished, the volprog - tool for volatility - will be opened
+"""
 import argparser
 import sys
 import ConfigClass
@@ -11,28 +16,27 @@ import thread
 import threading
 import adbcommands
 
-def create_and_config(a, b, c ,d, e, isrunning):	
-	config = ConfigClass.Config(a, b, c, d, e)
+def create_and_config(samplepath, interval, sdcard, outputpath, False, isrunning):	
+	config = ConfigClass.Config(samplepath, interval, sdcard, outputpath, False)
 	createfiles.create_avd_files(config.name, config.avddir, config.configdir, config.newavddir, config.outputpath, config.avdini, config.sdcard, isrunning)
-	f, g = apkparse.get_package_infos(config.samplepath)
-	config.set_apk_infos(f, g)
+	pkg, actvt = apkparse.get_package_infos(config.samplepath)
+	config.set_apk_infos(pkg, actvt)
 	return config
 
 def main(argv):
 	#inserts in the config-constructor args.samplepath, args.interval, args.sdcard, args.outputpath, args.customconfig
-	a, b, c, d, e = argparser.get_args()#todo
+	samplepath, interval, sdcard, outputpath, customconfig = argparser.get_args()#todo
 	adbcommands.kill_blocking_processes()
 	
 	if adbcommands.other_emulator_online() == False: #no other device running
-		config = create_and_config(a, b, c ,d, e, False)
-		machine = OnlineNotifierClass.OnlineNotifier(config.name, config.filedir)
+		config = create_and_config(samplepath, interval, sdcard, outputpath, False, False)
+		machine = OnlineNotifierClass.OnlineNotifier(config.name, config.filedir, config.newavddir)
 		machine.start_machine()
-		config.set_avd_pid(machine.avdpid)
 	else: #some other device is running
-		config = create_and_config(a, b, c ,d, e, True)
+		config = create_and_config(samplepath, interval, sdcard, outputpath, False, True)
 	start_online_timer()
 	android = MachineClass.Device(config)
-	android.start()
+	android.start_dumping_process()
 
 
 

@@ -1,3 +1,8 @@
+"""
+This script basically only prefixes the issued volatility-command with the profile-prefix. For easier handeling, some methods like -write, -all were implemented, to save the user the work of doing one command for every dump.
+Script starts in its current directory, so one needs to change to the directory where the dumps are located with -changedir.
+
+"""
 import os
 import subprocess
 import sys
@@ -18,7 +23,6 @@ class CmdBuilder:
 			exname = fname.rstrip('.dump')
 			exname = exname.strip('lime')
 			exname = '"' + tofilecmd + exname + '.txt"'
-			#print "\n" + exname + "\n"
 			cmd = cmd + ' > ' + exname
 
 		return self.cmdprefix + "-f " + fpath + " " + cmd
@@ -166,7 +170,7 @@ class Vshell:
 
 def volread_argparse(*args):
 	parser = argparse.ArgumentParser(description='Starts the volatility-helper tool')
-	parser.add_argument('-n', '--samplepath', required=False,help='path of the malware sample-dumps')
+	parser.add_argument('-n', '--samplepath', required=False,help='folder of the malware sample-dumps')
 	args = parser.parse_args()
 	if (args.samplepath) and (not os.path.isdir(args.samplepath)):
 		raise Exception("Error : the specified string is not pointing to a directory")

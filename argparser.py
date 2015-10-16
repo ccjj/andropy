@@ -7,7 +7,7 @@ def get_args(*args):
 	parser.add_argument('-n', '--samplepath', required=True,help='path of the malware sample-apk')
 	parser.add_argument('-i', '--interval', required=True, type=int, help='intervals for each memory dump in seconds')
 	parser.add_argument('-d', '--sdcard', type=int, required=False, help='dump will be saved on the sdcard of the android device instead of being transfered over TCP')
-	parser.add_argument('-o', '--outputpath', required=False, help='path of the output-path')
+	parser.add_argument('-o', '--outputpath', required=False, help=argparse.SUPPRESS)
 	parser.add_argument('-c', '--customconfig', required=False, help='path of a custom avd config.ini')
 
 	args = parser.parse_args()

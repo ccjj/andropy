@@ -1,11 +1,14 @@
-class Config:
+"""Class for saving all relevant settings."""
+import os
+import pwd
+class Config(object):
 
 	#virus and machinename are the same!
 	def __init__(self, samplepath, interval, sdcard=False, outputpath=False, customconfig=False):
 		self.samplepath = samplepath #path of the malware sample
 		self.name = os.path.splitext(os.path.basename(samplepath))[0] #name of the file without extension will be used as avdname
 		self.interval = interval #how often dumps should be taken
-		self.avddir = '/home/{}/.android/avd'.format(self.get_username())	
+		self.avddir = '/home/{}/.android/avd'.format(self.get_username())
 
 		if sdcard is not None:
 			self.avdini = 'config_sd.ini'
@@ -20,7 +23,7 @@ class Config:
 			self.outputpath = outputpath #custom dump-outputpath TODO
 		self.customconfig = customconfig #custom avd hardwareconfig
 		self.filedir = self.selfdir + '/files' #path of lime.ko and kernel
-		self.configdir= self.selfdir + '/configs' #path of preconfigured avd-configs, pre-defined
+		self.configdir = self.selfdir + '/configs' #path of preconfigured avd-configs, pre-defined
 		self.newavddir = self.avddir + '/' + self.name + '.avd' #folder of the new avd machine
 	
 	def set_apk_infos(self, package, activity):
@@ -31,7 +34,4 @@ class Config:
 		return pwd.getpwuid(os.getuid()).pw_name
 
 	def set_avd_pid(self, pid):
-		self.avdpid = avdpid
-
-import os
-import pwd
+		self.avdpid = pid

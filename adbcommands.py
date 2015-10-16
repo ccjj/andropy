@@ -1,15 +1,19 @@
+"""
+Collection of methods needed for interacting with the avd or adb
+"""
+
 import subprocess
 import time
 import os
-
+import shlex
+import shutil
 
 def restart_machine(name, filedir):
 	stop_avd()
 	start_avd(name, filedir)				
 
-def start_avd(name, filedir):
-	p = subprocess.Popen(["emulator", "-avd", name, "-kernel", filedir + "/gKernel3.4", "-verbose"], cwd = r'/usr/share/android-sdk/sdk')
-	return p.pid
+def start_avd(name, filedir, newavddir):
+	p = subprocess.Popen(["emulator", "-avd", name, "-sdcard", newavddir + "/sdcard.img", "-kernel", filedir + "/gKernel3.4", "-show-kernel", "-verbose"], cwd = r'/usr/share/android-sdk/sdk')
 			
 def stop_avd():
 	subprocess.call(['killall', '-9', 'emulator64-arm'])
@@ -46,12 +50,13 @@ def kill_blocking_processes():
 def kill_adb_by_name(avdname):
 	subprocess.call(['adb', '-s', avdname, 'emu', 'kill']) 
 
-def is_emulator_alive(avdpid):
-	try:
-		os.kill(avdpid, 0)
-		return True
-	except OSError: #process dead
-		pass
+def get_emulator_pid():
+	p = subprocess.Popen(['pgrep', 'emulator64-arm'], stdout=subprocess.PIPE)
+	out = 	p.communicate()[0]
+	for line in out.split('\n'):
+		if len(line.strip()) != 0 :
+			padb = line
+			return padb
 
 def other_emulator_online():
 	avdname = ""
@@ -62,10 +67,14 @@ def other_emulator_online():
 		if len(line) != 0:
 			if (line[0] != '*') and( not line[0].isspace()) and  ('List of devices' not in line):
 				tmplist = line.split()
+				if tmplist[1] == 'offline':
+					raise NotImplementedError("An emulator is offline. Please terminate the offline-emulator and start the script again.")
+				if avdname != "":
+					raise NotImplementedError("Running multiple emulators is not supported in this version.")
 				avdname = tmplist[0]
 				avdstatus = tmplist[1]
 				break
-	if avdname != "" and avdstatus != 'offline':
+	if avdname != "":
 		print "emulator '" + avdname + "' running. It will be used for periodic ram-dumps. Please open the apk that you want to examine manually. Please be aware that using running emulators is not fully supported"
 		time.sleep(5.0)
 		return True
@@ -73,15 +82,14 @@ def other_emulator_online():
 
 
 
-def install_lime(self):
+def install_lime(filedir):
 	print "installing lime"
-	cmd = "adb push {} /sdcard/lime.ko".format(self.filedir + '/lime-goldfish.ko')
+	cmd = "adb push {} /sdcard/lime.ko".format(filedir + '/lime-goldfish.ko')
 	p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE)
 	p.communicate()
 
 
-
-def copy_from_tmp(self, outputpath, tmpfilepath, filename):
+def copy_from_tmp(outputpath, tmpfilepath, filename):
 	try:
 		shutil.move(tmpfilepath, outputpath + '/' + filename)
 	except Exception as e:
