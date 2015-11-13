@@ -11,6 +11,7 @@ def get_package_infos(samplepath):
 	package: name='h.w' versionCode='1' versionName='a'
 	launchable-activity: name='a.a'  label='' icon='' """
 	cmd = 'aapt dump badging {} | grep "package\|activity"'.format(samplepath)
+	activity = ""
 	try:
 		out = subprocess.Popen(['/bin/bash', '-c', cmd], stdout=subprocess.PIPE)
 		for line in out.stdout:
