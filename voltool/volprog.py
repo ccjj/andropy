@@ -73,7 +73,7 @@ class Vshell:
 		self.parser.add_argument('-f', '--filename', help='name of the file. Required for a single file from the directory')
 		self.parser.add_argument('-w', '--writeoutput', action="store_true", required=False, help='writes the output of the volatility-command to a file')
 		self.parser.add_argument('errorflag', help=argparse.SUPPRESS, action="store_false")
-		self.parser.add_argument("items",nargs=argparse.REMAINDER)
+		self.parser.add_argument("items",nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
 
 	def parse_input(self, rawinput):
 		args = self.parser.parse_args(rawinput)
