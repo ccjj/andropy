@@ -67,7 +67,7 @@ class Vshell:
 
 
 	def build_arg_parser(self):
-		self.parser = argparse.ArgumentParser(description='Helps for examining or extracting volatility-memory-dumps', add_help=False)
+		self.parser = argparse.ArgumentParser(description='Helps for examining or extracting volatility-memory-dumps', add_help=True)
 		self.parser.add_argument('-all', '--allfiles', action="store_true", help='operation for all files in directory. Does not work together with -one')
 		self.parser.add_argument('-one', '--onefile', action="store_true", help='operation for one file in the directory.Does not work together with -all')
 		self.parser.add_argument('-f', '--filename', help='name of the file. Required for a single file from the directory')
